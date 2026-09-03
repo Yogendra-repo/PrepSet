@@ -1,0 +1,26 @@
+<%- include('partials/header', { title: 'Error' }) %>
+<%- include('partials/navbar', { activePage: '' }) %>
+
+<main class="main-content">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-6 text-center">
+        <div class="empty-state-icon mb-4" style="color: var(--bs-danger);">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size: 4rem;"></i>
+        </div>
+        <h2 class="fw-bold mb-2">Something went wrong</h2>
+        <p class="text-muted mb-4"><%= message || 'An unexpected error occurred.' %></p>
+        <div class="d-flex gap-3 justify-content-center">
+          <a href="/dashboard" class="btn btn-primary btn-lg px-4">
+            <i class="bi bi-house me-2"></i>Go to Dashboard
+          </a>
+          <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg px-4">
+            <i class="bi bi-arrow-left me-2"></i>Go Back
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

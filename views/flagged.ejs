@@ -1,0 +1,112 @@
+<%- include('partials/header', { title: 'Flagged Questions' }) %>
+<%- include('partials/navbar', { activePage: 'flagged' }) %>
+
+<main class="main-content">
+  <div class="container py-5">
+
+    <%- include('partials/flash') %>
+
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-5">
+      <div>
+        <h1 class="fw-bold mb-1"><i class="bi bi-star-fill text-warning me-2"></i>Flagged Questions</h1>
+        <p class="text-muted mb-0">
+          <% if (totalFlagged > 0) { %>
+            <%= totalFlagged %> question<%= totalFlagged !== 1 ? 's' : '' %> flagged across all sets
+          <% } else { %>
+            No flagged questions yet
+          <% } %>
+        </p>
+      </div>
+      <a href="/dashboard" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+
+    <% if (groups.length === 0) { %>
+      <!-- Empty State -->
+      <div class="empty-state text-center py-5">
+        <div class="empty-state-icon mb-4">
+          <i class="bi bi-star"></i>
+        </div>
+        <h4 class="fw-semibold mb-2">No Flagged Questions</h4>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">
+          While reviewing or taking a quiz, flag questions you find important or want to revisit later.
+        </p>
+        <a href="/dashboard" class="btn btn-primary btn-lg px-5">
+          <i class="bi bi-grid me-2"></i>Go to Dashboard
+        </a>
+      </div>
+    <% } else { %>
+      <% groups.forEach(group => { %>
+        <!-- Group Header -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="set-icon-wrap-sm">
+            <i class="bi bi-journal-bookmark-fill"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0"><%= group.name %></h5>
+            <span class="text-muted small"><%= group.questions.length %> flagged question<%= group.questions.length !== 1 ? 's' : '' %></span>
+          </div>
+          <a href="/sets/<%= group.id %>/quiz" class="btn btn-sm btn-primary ms-auto">
+            <i class="bi bi-play-fill me-1"></i>Start Quiz
+          </a>
+        </div>
+
+        <div class="d-flex flex-column gap-3 mb-5">
+          <% group.questions.forEach((q, idx) => { %>
+            <div class="card flagged-card border-0 shadow-sm" id="flagged-q-<%= q.id %>">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                  <span class="quiz-q-badge flex-shrink-0"><%= idx + 1 %></span>
+                  <h6 class="fw-semibold lh-base flex-grow-1 mb-0"><%= q.question_text %></h6>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle flex-shrink-0">
+                    <i class="bi bi-star-fill me-1"></i>Flagged
+                  </span>
+                </div>
+
+                <!-- Options -->
+                <div class="row g-2 mb-3 ps-5">
+                  <% const opts = [
+                    { key: 'A', val: q.option_a },
+                    { key: 'B', val: q.option_b },
+                    { key: 'C', val: q.option_c },
+                    { key: 'D', val: q.option_d },
+                  ]; %>
+                  <% opts.forEach(opt => { %>
+                    <div class="col-12 col-md-6">
+                      <div class="option-item <%= q.correct_answer === opt.key ? 'correct-option' : '' %>">
+                        <span class="option-label"><%= opt.key %></span>
+                        <span><%= opt.val %></span>
+                        <% if (q.correct_answer === opt.key) { %>
+                          <i class="bi bi-check-circle-fill ms-auto text-success"></i>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+
+                <!-- Footer -->
+                <div class="d-flex align-items-center justify-content-between ps-5">
+                  <span class="text-muted small">
+                    Correct: <strong class="text-success"><%= q.correct_answer %></strong>
+                  </span>
+                  <button
+                    class="btn btn-sm btn-warning flag-btn"
+                    data-question-id="<%= q.id %>"
+                    data-flagged="true"
+                    data-remove-on-unflag="true"
+                  >
+                    <i class="bi bi-star-fill me-1"></i>Unflag
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

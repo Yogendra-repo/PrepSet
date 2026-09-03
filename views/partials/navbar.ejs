@@ -1,0 +1,30 @@
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top" id="mainNavbar">
+  <div class="container">
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/dashboard">
+      <span class="navbar-logo-icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+      QuizVault
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>" href="/dashboard">
+            <i class="bi bi-grid-1x2-fill me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'flagged' ? 'active' : '' %>" href="/flagged">
+            <i class="bi bi-star-fill me-1"></i>Flagged
+          </a>
+        </li>
+        <li class="nav-item ms-lg-2">
+          <a class="btn btn-create-set" href="/sets/new">
+            <i class="bi bi-plus-lg me-1"></i>New Set
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

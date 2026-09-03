@@ -1,0 +1,29 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <% success.forEach(msg => { %>
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+      <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+      <span><%= msg %></span>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+  <% }) %>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <% error.forEach(msg => { %>
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+      <span><%= msg %></span>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+  <% }) %>
+<% } %>
+
+<% if (typeof info !== 'undefined' && info && info.length > 0) { %>
+  <% info.forEach(msg => { %>
+    <div class="alert alert-info alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+      <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+      <span><%= msg %></span>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+  <% }) %>
+<% } %>

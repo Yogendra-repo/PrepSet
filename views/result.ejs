@@ -1,0 +1,141 @@
+<%- include('partials/header', { title: 'Quiz Result' }) %>
+<%- include('partials/navbar', { activePage: '' }) %>
+
+<main class="main-content">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-7">
+
+        <!-- Result Card -->
+        <div class="card border-0 shadow result-card text-center mb-4">
+          <div class="card-body p-5">
+            <div class="result-icon mb-3">
+              <% if (percentage >= 75) { %>
+                <i class="bi bi-trophy-fill text-warning"></i>
+              <% } else if (percentage >= 50) { %>
+                <i class="bi bi-emoji-smile-fill text-primary"></i>
+              <% } else { %>
+                <i class="bi bi-emoji-frown-fill text-danger"></i>
+              <% } %>
+            </div>
+
+            <h2 class="fw-bold mb-1">Quiz Completed!</h2>
+            <p class="text-muted mb-4"><%= questionSet.name %></p>
+
+            <!-- Score -->
+            <div class="score-display mb-4">
+              <span class="score-big"><%= score %></span>
+              <span class="score-sep">/</span>
+              <span class="score-total"><%= totalQuestions %></span>
+            </div>
+
+            <!-- Accuracy Progress -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="fw-semibold">Accuracy</span>
+                <span class="fw-bold <%= percentage >= 75 ? 'text-success' : percentage >= 50 ? 'text-warning' : 'text-danger' %>">
+                  <%= percentage %>%
+                </span>
+              </div>
+              <div class="progress" style="height: 12px; border-radius: 6px;">
+                <div
+                  class="progress-bar <%= percentage >= 75 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-danger' %>"
+                  role="progressbar"
+                  style="width: <%= percentage %>%; border-radius: 6px;"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+              <div class="col-4">
+                <div class="stat-box">
+                  <div class="stat-value text-success"><%= correct %></div>
+                  <div class="stat-label">Correct</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="stat-box">
+                  <div class="stat-value text-danger"><%= incorrect %></div>
+                  <div class="stat-label">Incorrect</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="stat-box">
+                  <div class="stat-value text-muted"><%= totalQuestions - correct - incorrect %></div>
+                  <div class="stat-label">Skipped</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Message -->
+            <div class="alert <%= percentage >= 75 ? 'alert-success' : percentage >= 50 ? 'alert-warning' : 'alert-danger' %> border-0 mb-4">
+              <% if (percentage >= 75) { %>
+                <i class="bi bi-star-fill me-2"></i><strong>Excellent work!</strong> Keep it up!
+              <% } else if (percentage >= 50) { %>
+                <i class="bi bi-lightning-fill me-2"></i><strong>Good effort!</strong> Review the incorrect ones.
+              <% } else { %>
+                <i class="bi bi-book-fill me-2"></i><strong>Keep practising!</strong> Review the material and try again.
+              <% } %>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+              <a href="/sets/<%= questionSet.id %>/quiz" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-arrow-repeat me-2"></i>Retry Quiz
+              </a>
+              <a href="/sets/<%= questionSet.id %>" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="bi bi-grid me-2"></i>View Questions
+              </a>
+              <a href="/dashboard" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="bi bi-house me-2"></i>Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-Question Breakdown -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-bottom py-3">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-list-check text-primary"></i>Answer Breakdown
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <% results.forEach((r, idx) => { %>
+              <div class="result-row d-flex align-items-start gap-3 p-4 <%= idx < results.length - 1 ? 'border-bottom' : '' %>">
+                <div class="result-status-icon flex-shrink-0">
+                  <% if (r.userAnswer === null) { %>
+                    <i class="bi bi-dash-circle-fill text-muted fs-5"></i>
+                  <% } else if (r.isCorrect) { %>
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                  <% } else { %>
+                    <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                  <% } %>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                  <p class="fw-semibold mb-1 small"><span class="text-muted me-2">Q<%= idx + 1 %>.</span><%= r.question_text %></p>
+                  <div class="d-flex flex-wrap gap-2 small">
+                    <span class="text-muted">
+                      Your answer:
+                      <strong class="<%= r.userAnswer ? (r.isCorrect ? 'text-success' : 'text-danger') : 'text-muted' %>">
+                        <%= r.userAnswer || 'Not answered' %>
+                      </strong>
+                    </span>
+                    <% if (!r.isCorrect) { %>
+                      <span class="text-muted">|</span>
+                      <span class="text-muted">Correct: <strong class="text-success"><%= r.correct_answer %></strong></span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

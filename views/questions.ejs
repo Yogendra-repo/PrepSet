@@ -1,0 +1,197 @@
+<%- include('partials/header', { title: questionSet.name }) %>
+<%- include('partials/navbar', { activePage: 'dashboard' }) %>
+
+<main class="main-content">
+  <div class="container py-5">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item active"><%= questionSet.name %></li>
+      </ol>
+    </nav>
+
+    <%- include('partials/flash') %>
+
+    <!-- Set Header -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-5">
+      <div>
+        <h1 class="fw-bold mb-1"><%= questionSet.name %></h1>
+        <% if (questionSet.description) { %>
+          <p class="text-muted mb-2"><%= questionSet.description %></p>
+        <% } %>
+        <div class="d-flex align-items-center gap-3">
+          <span class="badge bg-primary-soft text-primary px-3 py-2">
+            <i class="bi bi-question-circle me-1"></i><%= questions.length %> Question<%= questions.length !== 1 ? 's' : '' %>
+          </span>
+          <span class="text-muted small">
+            <i class="bi bi-calendar3 me-1"></i>
+            Created <%= new Date(questionSet.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+          </span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="/sets/<%= questionSet.id %>/upload" class="btn btn-outline-primary">
+          <i class="bi bi-upload me-1"></i>Upload More
+        </a>
+        <% if (questions.length > 0) { %>
+          <a href="/sets/<%= questionSet.id %>/quiz" class="btn btn-primary btn-lg">
+            <i class="bi bi-play-fill me-1"></i>Start Quiz
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (questions.length === 0) { %>
+      <!-- Empty State -->
+      <div class="empty-state text-center py-5">
+        <div class="empty-state-icon mb-4">
+          <i class="bi bi-file-earmark-plus"></i>
+        </div>
+        <h4 class="fw-semibold mb-2">No Questions Yet</h4>
+        <p class="text-muted mb-4">Upload a CSV file to add questions to this set.</p>
+        <a href="/sets/<%= questionSet.id %>/upload" class="btn btn-primary btn-lg px-5">
+          <i class="bi bi-upload me-2"></i>Upload CSV
+        </a>
+      </div>
+    <% } else { %>
+
+      <!-- Recent Attempts -->
+      <% if (attempts && attempts.length > 0) { %>
+        <div class="card border-0 shadow-sm mb-5">
+          <div class="card-header bg-transparent border-bottom py-3">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-clock-history text-primary"></i>Recent Attempts
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-4">Date</th>
+                    <th>Score</th>
+                    <th>Accuracy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% attempts.forEach(a => { %>
+                    <tr>
+                      <td class="ps-4 text-muted small">
+                        <%= new Date(a.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                      </td>
+                      <td class="fw-semibold"><%= a.score %> / <%= a.total_questions %></td>
+                      <td>
+                        <% const pct = Math.round((a.score / a.total_questions) * 100); %>
+                        <span class="badge <%= pct >= 75 ? 'bg-success' : pct >= 50 ? 'bg-warning text-dark' : 'bg-danger' %>">
+                          <%= pct %>%
+                        </span>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Questions List -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0">All Questions</h5>
+        <span class="text-muted small"><%= questions.filter(q => q.is_flagged).length %> flagged</span>
+      </div>
+
+      <div class="d-flex flex-column gap-3">
+        <% questions.forEach((q, idx) => { %>
+          <div class="card question-card border-0 shadow-sm <%= q.is_flagged ? 'flagged-card' : '' %>" id="question-<%= q.id %>">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                <div class="d-flex align-items-start gap-3 flex-grow-1">
+                  <span class="question-number-badge flex-shrink-0"><%= idx + 1 %></span>
+                  <h6 class="fw-semibold mb-0 lh-base flex-grow-1"><%= q.question_text %></h6>
+                </div>
+                <% if (q.is_flagged) { %>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 flex-shrink-0">
+                    <i class="bi bi-star-fill me-1"></i>Flagged
+                  </span>
+                <% } %>
+              </div>
+
+              <!-- Options -->
+              <div class="row g-2 mb-3 ps-5">
+                <div class="col-12 col-md-6">
+                  <div class="option-item <%= q.correct_answer === 'A' ? 'correct-option' : '' %>">
+                    <span class="option-label">A</span>
+                    <span><%= q.option_a %></span>
+                    <% if (q.correct_answer === 'A') { %><i class="bi bi-check-circle-fill ms-auto text-success"></i><% } %>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="option-item <%= q.correct_answer === 'B' ? 'correct-option' : '' %>">
+                    <span class="option-label">B</span>
+                    <span><%= q.option_b %></span>
+                    <% if (q.correct_answer === 'B') { %><i class="bi bi-check-circle-fill ms-auto text-success"></i><% } %>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="option-item <%= q.correct_answer === 'C' ? 'correct-option' : '' %>">
+                    <span class="option-label">C</span>
+                    <span><%= q.option_c %></span>
+                    <% if (q.correct_answer === 'C') { %><i class="bi bi-check-circle-fill ms-auto text-success"></i><% } %>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="option-item <%= q.correct_answer === 'D' ? 'correct-option' : '' %>">
+                    <span class="option-label">D</span>
+                    <span><%= q.option_d %></span>
+                    <% if (q.correct_answer === 'D') { %><i class="bi bi-check-circle-fill ms-auto text-success"></i><% } %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Flag button -->
+              <div class="d-flex align-items-center justify-content-between ps-5">
+                <span class="text-muted small">
+                  Correct: <strong class="text-success"><%= q.correct_answer %></strong>
+                </span>
+                <button
+                  class="btn btn-sm flag-btn <%= q.is_flagged ? 'btn-warning' : 'btn-outline-secondary' %>"
+                  data-question-id="<%= q.id %>"
+                  data-flagged="<%= q.is_flagged %>"
+                >
+                  <i class="bi <%= q.is_flagged ? 'bi-star-fill' : 'bi-star' %> me-1"></i>
+                  <%= q.is_flagged ? 'Unflag' : 'Flag Important' %>
+                </button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- Bottom Action -->
+      <div class="text-center mt-5">
+        <a href="/sets/<%= questionSet.id %>/quiz" class="btn btn-primary btn-lg px-5">
+          <i class="bi bi-play-fill me-2"></i>Start Quiz
+        </a>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="card border-danger border-opacity-25 mt-5">
+        <div class="card-body p-4">
+          <h6 class="text-danger fw-bold mb-1">Danger Zone</h6>
+          <p class="text-muted small mb-3">Deleting this question set will permanently remove all questions and quiz history.</p>
+          <form action="/sets/<%= questionSet.id %>/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete this question set? This cannot be undone.')">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-trash3 me-1"></i>Delete Question Set
+            </button>
+          </form>
+        </div>
+      </div>
+
+    <% } %>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

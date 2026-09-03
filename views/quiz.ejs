@@ -1,0 +1,196 @@
+<%- include('partials/header', { title: 'Quiz — ' + questionSet.name }) %>
+<%- include('partials/navbar', { activePage: '' }) %>
+
+<main class="main-content quiz-mode">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-8">
+
+        <!-- Quiz Header -->
+        <div class="quiz-header text-center mb-4">
+          <p class="text-muted small mb-1">
+            <i class="bi bi-journal-bookmark-fill me-1 text-primary"></i><%= questionSet.name %>
+          </p>
+          <h2 class="fw-bold mb-3">Quiz Mode</h2>
+
+          <!-- Progress Bar -->
+          <div class="quiz-progress-wrap">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small" id="progressLabel">Question 1 of <%= questions.length %></span>
+              <span class="text-muted small" id="answeredLabel">0 answered</span>
+            </div>
+            <div class="progress quiz-progress" style="height: 8px;">
+              <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Questions Container -->
+        <form id="quizForm" action="/sets/<%= questionSet.id %>/quiz/submit" method="POST">
+
+          <% questions.forEach((q, idx) => { %>
+            <div class="quiz-question-slide card border-0 shadow-sm <%= idx === 0 ? 'active' : '' %>" id="slide-<%= idx %>" data-index="<%= idx %>">
+              <div class="card-body p-4 p-md-5">
+
+                <!-- Question number -->
+                <div class="d-flex align-items-center gap-2 mb-4">
+                  <span class="quiz-q-badge"><%= idx + 1 %></span>
+                  <span class="text-muted small">of <%= questions.length %></span>
+                  <span class="ms-auto badge bg-secondary-subtle text-secondary" id="answered-badge-<%= idx %>">Not answered</span>
+                </div>
+
+                <!-- Question text -->
+                <h5 class="fw-semibold lh-base mb-4"><%= q.question_text %></h5>
+
+                <!-- Options -->
+                <div class="d-flex flex-column gap-3">
+                  <% const opts = [
+                    { key: 'A', val: q.option_a },
+                    { key: 'B', val: q.option_b },
+                    { key: 'C', val: q.option_c },
+                    { key: 'D', val: q.option_d },
+                  ]; %>
+                  <% opts.forEach(opt => { %>
+                    <label class="quiz-option-label" id="opt-<%= idx %>-<%= opt.key %>">
+                      <input
+                        type="radio"
+                        name="answers[<%= q.id %>]"
+                        value="<%= opt.key %>"
+                        class="quiz-radio"
+                        data-slide="<%= idx %>"
+                        data-key="<%= opt.key %>"
+                      />
+                      <span class="quiz-option-key"><%= opt.key %></span>
+                      <span class="quiz-option-text"><%= opt.val %></span>
+                    </label>
+                  <% }) %>
+                </div>
+
+              </div>
+            </div>
+          <% }) %>
+
+          <!-- Navigation -->
+          <div class="quiz-nav d-flex align-items-center justify-content-between mt-4 gap-3">
+            <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="prevBtn" disabled onclick="navigate(-1)">
+              <i class="bi bi-arrow-left me-1"></i>Previous
+            </button>
+
+            <!-- Question dots (desktop) -->
+            <div class="quiz-dots d-none d-md-flex gap-1 flex-wrap justify-content-center">
+              <% questions.forEach((_, idx) => { %>
+                <button type="button" class="dot-btn" id="dot-<%= idx %>" onclick="goToSlide(<%= idx %>)" title="Question <%= idx + 1 %>"></button>
+              <% }) %>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-lg px-4" id="nextBtn" onclick="navigate(1)">
+              Next<i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+
+          <!-- Submit Button (shown on last question) -->
+          <div class="text-center mt-4" id="submitWrap" style="display: none !important;">
+            <button type="button" class="btn btn-success btn-lg px-5" id="submitBtn" onclick="confirmSubmit()">
+              <i class="bi bi-check2-circle me-2"></i>Submit Quiz
+            </button>
+            <p class="text-muted small mt-2" id="unansweredWarning" style="display: none;">
+              <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
+              <span id="unansweredCount"></span> question(s) left unanswered.
+            </p>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const TOTAL = <%= questions.length %>;
+  let current = 0;
+  const answered = new Array(TOTAL).fill(false);
+
+  function updateUI() {
+    // Show/hide slides
+    document.querySelectorAll('.quiz-question-slide').forEach((el, i) => {
+      el.classList.toggle('active', i === current);
+    });
+
+    // Progress
+    document.getElementById('progressLabel').textContent = `Question ${current + 1} of ${TOTAL}`;
+    const answeredCount = answered.filter(Boolean).length;
+    document.getElementById('answeredLabel').textContent = `${answeredCount} answered`;
+    document.getElementById('progressBar').style.width = `${(answeredCount / TOTAL) * 100}%`;
+
+    // Nav buttons
+    document.getElementById('prevBtn').disabled = current === 0;
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Dots
+    document.querySelectorAll('.dot-btn').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+      d.classList.toggle('answered', answered[i]);
+    });
+
+    // Submit button: show only on last slide
+    const submitWrap = document.getElementById('submitWrap');
+    if (current === TOTAL - 1) {
+      submitWrap.style.removeProperty('display');
+      nextBtn.style.display = 'none';
+    } else {
+      submitWrap.style.setProperty('display', 'none', 'important');
+      nextBtn.style.display = '';
+    }
+  }
+
+  function navigate(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < TOTAL) {
+      current = next;
+      updateUI();
+    }
+  }
+
+  function goToSlide(idx) {
+    current = idx;
+    updateUI();
+  }
+
+  function confirmSubmit() {
+    const unanswered = answered.filter(v => !v).length;
+    if (unanswered > 0) {
+      const warn = document.getElementById('unansweredWarning');
+      document.getElementById('unansweredCount').textContent = unanswered;
+      warn.style.display = 'block';
+      if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) return;
+    }
+    document.getElementById('quizForm').submit();
+  }
+
+  // Listen for radio changes
+  document.querySelectorAll('.quiz-radio').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const idx = parseInt(this.dataset.slide);
+      answered[idx] = true;
+
+      // Update option styles for this slide
+      document.querySelectorAll(`[id^="opt-${idx}-"]`).forEach(label => {
+        label.classList.remove('selected');
+      });
+      document.getElementById(`opt-${idx}-${this.dataset.key}`).classList.add('selected');
+
+      // Update answered badge
+      const badge = document.getElementById(`answered-badge-${idx}`);
+      badge.textContent = `Option ${this.dataset.key} selected`;
+      badge.className = 'ms-auto badge bg-success-subtle text-success';
+
+      updateUI();
+    });
+  });
+
+  // Init
+  updateUI();
+</script>
+
+<%- include('partials/footer') %>
