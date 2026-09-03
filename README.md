@@ -1,4 +1,4 @@
-# QuizVault
+# PrepSet
 
 A personal question-bank and quiz web application built with Node.js, Express, PostgreSQL, and EJS.
 
