@@ -6,8 +6,7 @@ node_modules
 # https://github.com/nodejs/nodejs.org/discussions/5334#discussioncomment-12827850
 npm-debug.log
 .npm
-package-lock.json
-
+PROJECT_GUIDE.md
 # Next.js Build Output
 apps/site/.next
 apps/site/build

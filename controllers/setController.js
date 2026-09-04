@@ -2,6 +2,12 @@ import db from '../db/db.js';
 import fs from 'fs';
 import { parseQuizCSV } from '../utils/csvParser.js';
 
+// Helper to parse and validate integer IDs
+function parseId(idParam) {
+  const id = parseInt(idParam, 10);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 // GET /sets/new
 export function showCreateForm(req, res) {
   res.render('create-set');
@@ -18,8 +24,8 @@ export async function createSet(req, res) {
 
   try {
     const result = await db.query(
-      'INSERT INTO question_sets (name, description) VALUES ($1, $2) RETURNING id',
-      [name.trim(), description?.trim() || null]
+      'INSERT INTO question_sets (user_id, name, description) VALUES ($1, $2, $3) RETURNING id',
+      [req.user.id, name.trim(), description?.trim() || null]
     );
     const setId = result.rows[0].id;
     req.flash('success', `Question set "${name.trim()}" created successfully!`);
@@ -33,11 +39,15 @@ export async function createSet(req, res) {
 
 // GET /sets/:id
 export async function showSet(req, res) {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(404).render('error', { message: 'Question set not found.', error: null });
+  }
+
   try {
     const setResult = await db.query(
-      'SELECT * FROM question_sets WHERE id = $1',
-      [id]
+      'SELECT * FROM question_sets WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
     );
     if (setResult.rows.length === 0) {
       return res.status(404).render('error', { message: 'Question set not found.', error: null });
@@ -50,8 +60,8 @@ export async function showSet(req, res) {
     );
 
     const attemptsResult = await db.query(
-      'SELECT * FROM quiz_attempts WHERE question_set_id = $1 ORDER BY created_at DESC LIMIT 5',
-      [id]
+      'SELECT * FROM quiz_attempts WHERE question_set_id = $1 AND user_id = $2 AND submitted_at IS NOT NULL ORDER BY created_at DESC LIMIT 5',
+      [id, req.user.id]
     );
 
     res.render('questions', {
@@ -67,9 +77,13 @@ export async function showSet(req, res) {
 
 // GET /sets/:id/upload
 export async function showUploadForm(req, res) {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(404).render('error', { message: 'Question set not found.', error: null });
+  }
+
   try {
-    const result = await db.query('SELECT * FROM question_sets WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM question_sets WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     if (result.rows.length === 0) {
       return res.status(404).render('error', { message: 'Question set not found.', error: null });
     }
@@ -82,44 +96,69 @@ export async function showUploadForm(req, res) {
 
 // POST /sets/:id/upload
 export async function uploadCSV(req, res) {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    return res.status(404).render('error', { message: 'Question set not found.', error: null });
+  }
 
   // Get question set
   let questionSet;
   try {
-    const result = await db.query('SELECT * FROM question_sets WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM question_sets WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     if (result.rows.length === 0) {
+      if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(404).render('error', { message: 'Question set not found.', error: null });
     }
     questionSet = result.rows[0];
   } catch (err) {
     console.error(err);
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     req.flash('error', 'Database error. Please try again.');
     return res.redirect(`/sets/${id}/upload`);
   }
 
-  // Check file was uploaded
-  if (!req.file) {
-    req.flash('error', 'Please select a CSV file to upload.');
+  const csvText = req.body.csvText?.trim();
+
+  // Require exactly one CSV source.
+  if (!req.file && !csvText) {
+    req.flash('error', 'Please select a CSV file or paste CSV text.');
+    return res.redirect(`/sets/${id}/upload`);
+  }
+  if (req.file && csvText) {
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    req.flash('error', 'Please use either a CSV file or pasted CSV text, not both.');
     return res.redirect(`/sets/${id}/upload`);
   }
 
-  // Check MIME type / extension
-  const ext = req.file.originalname.split('.').pop().toLowerCase();
-  if (ext !== 'csv') {
-    fs.unlinkSync(req.file.path);
-    req.flash('error', 'Only CSV files are allowed.');
-    return res.redirect(`/sets/${id}/upload`);
+  if (req.file) {
+    // Check MIME type / extension
+    const ext = req.file.originalname.split('.').pop().toLowerCase();
+    if (ext !== 'csv') {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      req.flash('error', 'Only CSV files are allowed.');
+      return res.redirect(`/sets/${id}/upload`);
+    }
   }
 
   try {
-    const { questions, errors } = await parseQuizCSV(req.file.path);
+    const { questions, errors } = await parseQuizCSV(
+      req.file ? req.file.path : csvText,
+      req.file ? 'file' : 'text'
+    );
 
-    // Clean up uploaded file
-    fs.unlinkSync(req.file.path);
+    // Clean up uploaded file immediately
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     if (errors.length > 0) {
-      req.flash('error', errors.join(' | '));
+      const displayErrors = errors.slice(0, 5);
+      let errorMsg = displayErrors.join(' | ');
+      if (errors.length > 5) {
+        errorMsg += ` ... and ${errors.length - 5} more error(s).`;
+      }
+      req.flash('error', errorMsg);
       return res.redirect(`/sets/${id}/upload`);
     }
 
@@ -128,15 +167,27 @@ export async function uploadCSV(req, res) {
       return res.redirect(`/sets/${id}/upload`);
     }
 
-    // Insert all questions in a transaction
+    // Insert all questions in chunked multi-row batches for maximum speed
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      for (const q of questions) {
+      const chunkSize = 50;
+      for (let i = 0; i < questions.length; i += chunkSize) {
+        const chunk = questions.slice(i, i + chunkSize);
+        const values = [];
+        const valueClauses = [];
+        let paramIndex = 1;
+
+        for (const q of chunk) {
+          valueClauses.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5}, $${paramIndex + 6})`);
+          values.push(id, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer);
+          paramIndex += 7;
+        }
+
         await client.query(
           `INSERT INTO questions (question_set_id, question_text, option_a, option_b, option_c, option_d, correct_answer)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [id, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer]
+           VALUES ${valueClauses.join(', ')}`,
+          values
         );
       }
       await client.query('COMMIT');
@@ -161,9 +212,13 @@ export async function uploadCSV(req, res) {
 
 // POST /sets/:id/delete
 export async function deleteSet(req, res) {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(404).render('error', { message: 'Question set not found.', error: null });
+  }
+
   try {
-    await db.query('DELETE FROM question_sets WHERE id = $1', [id]);
+    await db.query('DELETE FROM question_sets WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     req.flash('success', 'Question set deleted successfully.');
     res.redirect('/dashboard');
   } catch (err) {

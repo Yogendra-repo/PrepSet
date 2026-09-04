@@ -15,64 +15,75 @@
     <%- include('partials/flash') %>
 
     <!-- Set Header -->
-    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-5">
-      <div>
-        <h1 class="fw-bold mb-1"><%= questionSet.name %></h1>
-        <% if (questionSet.description) { %>
-          <p class="text-muted mb-2"><%= questionSet.description %></p>
-        <% } %>
-        <div class="d-flex align-items-center gap-3">
-          <span class="badge bg-primary-soft text-primary px-3 py-2">
-            <i class="bi bi-question-circle me-1"></i><%= questions.length %> Question<%= questions.length !== 1 ? 's' : '' %>
-          </span>
-          <span class="text-muted small">
-            <i class="bi bi-calendar3 me-1"></i>
-            Created <%= new Date(questionSet.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-          </span>
+    <div class="card border-0 mb-4 p-4 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(14px);">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="brand-icon-badge" style="width: 32px; height: 32px; font-size: 1rem;"><i class="bi bi-stack"></i></span>
+            <h1 class="fw-bold mb-0 text-dark" style="font-size: 1.8rem;"><%= questionSet.name %></h1>
+          </div>
+          <% if (questionSet.description) { %>
+            <p class="text-muted mb-3 mt-1"><%= questionSet.description %></p>
+          <% } else { %>
+            <div class="mb-2"></div>
+          <% } %>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="badge-count">
+              <i class="bi bi-question-circle me-1"></i><%= questions.length %> Question<%= questions.length !== 1 ? 's' : '' %>
+            </span>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 rounded-pill fw-semibold">
+              <i class="bi bi-star-fill me-1"></i><span id="flaggedTotalCount"><%= questions.filter(q => q.is_flagged).length %></span> Flagged
+            </span>
+            <span class="text-muted small">
+              <i class="bi bi-calendar3 me-1"></i>
+              Created <%= new Date(questionSet.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+            </span>
+          </div>
         </div>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <a href="/sets/<%= questionSet.id %>/upload" class="btn btn-outline-primary">
-          <i class="bi bi-upload me-1"></i>Upload More
-        </a>
-        <% if (questions.length > 0) { %>
-          <a href="/sets/<%= questionSet.id %>/quiz" class="btn btn-primary btn-lg">
-            <i class="bi bi-play-fill me-1"></i>Start Quiz
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/sets/<%= questionSet.id %>/upload" class="btn btn-outline-secondary">
+            <i class="bi bi-upload me-1"></i>Upload More
           </a>
-        <% } %>
+          <% if (questions.length > 0) { %>
+            <a href="/sets/<%= questionSet.id %>/quiz" class="btn btn-primary btn-lg px-4">
+              <i class="bi bi-play-fill me-1"></i>Start Quiz
+            </a>
+          <% } %>
+        </div>
       </div>
     </div>
 
     <% if (questions.length === 0) { %>
       <!-- Empty State -->
-      <div class="empty-state text-center py-5">
-        <div class="empty-state-icon mb-4">
+      <div class="empty-state-box my-4">
+        <div class="empty-state-icon">
           <i class="bi bi-file-earmark-plus"></i>
         </div>
-        <h4 class="fw-semibold mb-2">No Questions Yet</h4>
-        <p class="text-muted mb-4">Upload a CSV file to add questions to this set.</p>
+        <h3 class="fw-bold mb-2">No Questions in This Set</h3>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 420px;">Upload questions using a CSV file or paste formatted CSV text to begin quizzing.</p>
         <a href="/sets/<%= questionSet.id %>/upload" class="btn btn-primary btn-lg px-5">
-          <i class="bi bi-upload me-2"></i>Upload CSV
+          <i class="bi bi-upload me-2"></i>Upload Questions
         </a>
       </div>
     <% } else { %>
 
       <!-- Recent Attempts -->
       <% if (attempts && attempts.length > 0) { %>
-        <div class="card border-0 shadow-sm mb-5">
+        <div class="card border-0 mb-4">
           <div class="card-header bg-transparent border-bottom py-3">
-            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
-              <i class="bi bi-clock-history text-primary"></i>Recent Attempts
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+              <i class="bi bi-clock-history text-primary"></i>Recent Quiz Attempts
             </h6>
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
+              <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light small text-muted text-uppercase">
                   <tr>
-                    <th class="ps-4">Date</th>
+                    <th class="ps-4">Date & Time</th>
                     <th>Score</th>
                     <th>Accuracy</th>
+                    <th>Duration</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -81,12 +92,15 @@
                       <td class="ps-4 text-muted small">
                         <%= new Date(a.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
                       </td>
-                      <td class="fw-semibold"><%= a.score %> / <%= a.total_questions %></td>
+                      <td class="fw-bold text-dark"><%= a.score %> / <%= a.total_questions %></td>
                       <td>
-                        <% const pct = Math.round((a.score / a.total_questions) * 100); %>
-                        <span class="badge <%= pct >= 75 ? 'bg-success' : pct >= 50 ? 'bg-warning text-dark' : 'bg-danger' %>">
+                        <% const pct = a.total_questions > 0 ? Math.round((a.score / a.total_questions) * 100) : 0; %>
+                        <span class="badge <%= pct >= 75 ? 'bg-success' : pct >= 50 ? 'bg-warning text-dark' : 'bg-danger' %> px-2.5 py-1.5 rounded-pill">
                           <%= pct %>%
                         </span>
+                      </td>
+                      <td class="text-muted small">
+                        <i class="bi bi-stopwatch me-1"></i><%= Math.floor(a.duration_seconds / 60).toString().padStart(2, '0') %>:<%= (a.duration_seconds % 60).toString().padStart(2, '0') %>
                       </td>
                     </tr>
                   <% }) %>
@@ -97,15 +111,36 @@
         </div>
       <% } %>
 
-      <!-- Questions List -->
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="fw-bold mb-0">All Questions</h5>
-        <span class="text-muted small"><%= questions.filter(q => q.is_flagged).length %> flagged</span>
+      <!-- Questions Header & Live Filter -->
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="fw-bold mb-0 text-white">Questions (<span id="visibleQuestionsCount"><%= questions.length %></span>)</h5>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Filter Buttons -->
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-primary active" id="btnFilterAll" onclick="filterQuestions('all')">All</button>
+            <button type="button" class="btn btn-outline-light" id="btnFilterFlagged" onclick="filterQuestions('flagged')">Flagged Only</button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="search-filter-wrapper py-1 px-2.5" style="max-width: 260px;">
+            <i class="bi bi-search text-muted small"></i>
+            <input
+              type="text"
+              id="questionSearchInput"
+              placeholder="Search in questions..."
+              style="font-size: 0.85rem;"
+              oninput="filterQuestions()"
+            />
+          </div>
+        </div>
       </div>
 
-      <div class="d-flex flex-column gap-3">
+      <div class="d-flex flex-column gap-3" id="questionsList">
         <% questions.forEach((q, idx) => { %>
-          <div class="card question-card border-0 shadow-sm <%= q.is_flagged ? 'flagged-card' : '' %>" id="question-<%= q.id %>">
+          <div class="card question-card question-item border-0 shadow-sm <%= q.is_flagged ? 'flagged-card' : '' %>" id="question-<%= q.id %>" data-flagged="<%= q.is_flagged %>" data-text="<%= q.question_text.toLowerCase() %>">
             <div class="card-body p-4">
               <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                 <div class="d-flex align-items-start gap-3 flex-grow-1">
@@ -193,5 +228,47 @@
     <% } %>
   </div>
 </main>
+
+<script>
+  let currentFlagFilter = 'all';
+
+  function filterQuestions(flagType) {
+    if (flagType) {
+      currentFlagFilter = flagType;
+      const allBtn = document.getElementById('btnFilterAll');
+      const flaggedBtn = document.getElementById('btnFilterFlagged');
+      if (allBtn && flaggedBtn) {
+        if (flagType === 'all') {
+          allBtn.className = 'btn btn-primary active';
+          flaggedBtn.className = 'btn btn-outline-light';
+        } else {
+          allBtn.className = 'btn btn-outline-light';
+          flaggedBtn.className = 'btn btn-primary active';
+        }
+      }
+    }
+
+    const query = (document.getElementById('questionSearchInput')?.value || '').toLowerCase().trim();
+    let visible = 0;
+
+    document.querySelectorAll('.question-item').forEach(card => {
+      const isFlagged = card.getAttribute('data-flagged') === 'true';
+      const text = card.getAttribute('data-text') || '';
+
+      const matchFlag = (currentFlagFilter === 'all') || (currentFlagFilter === 'flagged' && isFlagged);
+      const matchText = !query || text.includes(query);
+
+      if (matchFlag && matchText) {
+        card.classList.remove('d-none');
+        visible++;
+      } else {
+        card.classList.add('d-none');
+      }
+    });
+
+    const countEl = document.getElementById('visibleQuestionsCount');
+    if (countEl) countEl.textContent = visible;
+  }
+</script>
 
 <%- include('partials/footer') %>

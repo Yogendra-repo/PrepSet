@@ -5,7 +5,8 @@ A personal question-bank and quiz web application built with Node.js, Express, P
 ## Features
 
 - Create question sets with a name and description
-- Upload questions via CSV file
+- Secure account login and signup with private user-owned question sets
+- Upload questions via CSV file or pasted CSV text
 - Full CSV validation before inserting into database
 - View all questions in a question set (with correct answers visible)
 - Flag / unflag important questions (AJAX, no page reload)
@@ -46,7 +47,7 @@ A personal question-bank and quiz web application built with Node.js, Express, P
 ### 1. Clone / Download the project
 
 ```bash
-cd QuizVault
+cd PrepSet
 ```
 
 ### 2. Install dependencies
@@ -70,6 +71,28 @@ psql -U postgres -d quizvault -f db/schema.sql
 ```
 
 Or paste the contents of `db/schema.sql` into your SQL client.
+
+The schema now includes user accounts and ownership columns. Existing question sets from an older single-user installation have a `NULL` owner after migration and are intentionally hidden until you assign them to an account. After creating your account, an administrator can migrate legacy rows explicitly with:
+
+```sql
+UPDATE question_sets
+SET user_id = <your_user_id>
+WHERE user_id IS NULL;
+
+UPDATE quiz_attempts qa
+SET user_id = qs.user_id
+FROM question_sets qs
+WHERE qa.question_set_id = qs.id
+	AND qa.user_id IS NULL;
+```
+
+Do not assign legacy rows automatically during signup, because that could expose one user's data to another account.
+
+If the database already exists, run this once to add quiz timing:
+
+```sql
+ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS duration_seconds INTEGER NOT NULL DEFAULT 0;
+```
 
 ### 4. Configure environment variables
 
@@ -126,7 +149,7 @@ question,optionA,optionB,optionC,optionD,correctAnswer
 
 ### Validation Rules
 
-- File must be `.csv`
+- Uploaded files must be `.csv`; pasted CSV text is also supported
 - Maximum file size: **5 MB**
 - All 6 columns must be present
 - No required field may be empty
@@ -192,12 +215,17 @@ QuizVault/
 | Method | Route                     | Description                        |
 |--------|---------------------------|------------------------------------|
 | GET    | `/`                       | Redirects to `/dashboard`          |
+| GET    | `/login`                  | Login form                         |
+| POST   | `/login`                  | Authenticate with email/password   |
+| GET    | `/signup`                 | Signup form                        |
+| POST   | `/signup`                 | Create an account                  |
+| POST   | `/logout`                 | End the current session            |
 | GET    | `/dashboard`              | Lists all question sets            |
 | GET    | `/sets/new`               | Create new question set form       |
 | POST   | `/sets`                   | Create a new question set          |
 | GET    | `/sets/:id`               | View questions in a set            |
-| GET    | `/sets/:id/upload`        | CSV upload form                    |
-| POST   | `/sets/:id/upload`        | Upload & validate CSV              |
+| GET    | `/sets/:id/upload`        | CSV file or text upload form       |
+| POST   | `/sets/:id/upload`        | Upload or paste & validate CSV     |
 | POST   | `/sets/:id/delete`        | Delete a question set              |
 | POST   | `/questions/:id/toggle-flag` | Flag / unflag a question        |
 | GET    | `/sets/:id/quiz`          | Start quiz for a set               |
@@ -209,9 +237,10 @@ QuizVault/
 ## Database Schema
 
 ```sql
-question_sets (id, name, description, created_at)
+users          (id, email, display_name, password_hash, created_at)
+question_sets (id, user_id, name, description, created_at)
 questions     (id, question_set_id, question_text, option_a..d, correct_answer, is_flagged, created_at)
-quiz_attempts (id, question_set_id, score, total_questions, created_at)
+quiz_attempts (id, user_id, question_set_id, score, total_questions, created_at)
 ```
 
 ---

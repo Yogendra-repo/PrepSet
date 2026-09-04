@@ -7,31 +7,31 @@
     <%- include('partials/flash') %>
 
     <!-- Page Header -->
-    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-5">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
       <div>
-        <h1 class="fw-bold mb-1"><i class="bi bi-star-fill text-warning me-2"></i>Flagged Questions</h1>
-        <p class="text-muted mb-0">
+        <h1 class="page-title mb-1"><i class="bi bi-star-fill text-warning me-2"></i>Flagged Questions</h1>
+        <p class="page-subtitle mb-0">
           <% if (totalFlagged > 0) { %>
-            <%= totalFlagged %> question<%= totalFlagged !== 1 ? 's' : '' %> flagged across all sets
+            <%= totalFlagged %> critical question<%= totalFlagged !== 1 ? 's' : '' %> saved for revision
           <% } else { %>
-            No flagged questions yet
+            No flagged questions yet. Star questions while reviewing to build your revision list.
           <% } %>
         </p>
       </div>
-      <a href="/dashboard" class="btn btn-outline-secondary">
+      <a href="/dashboard" class="btn btn-outline-light">
         <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
       </a>
     </div>
 
     <% if (groups.length === 0) { %>
       <!-- Empty State -->
-      <div class="empty-state text-center py-5">
-        <div class="empty-state-icon mb-4">
+      <div class="empty-state-box my-4">
+        <div class="empty-state-icon">
           <i class="bi bi-star"></i>
         </div>
-        <h4 class="fw-semibold mb-2">No Flagged Questions</h4>
-        <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">
-          While reviewing or taking a quiz, flag questions you find important or want to revisit later.
+        <h3 class="fw-bold mb-2">No Flagged Questions</h3>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 440px;">
+          While practicing or reviewing a question set, click <strong>"Flag Important"</strong> to pin questions here for quick revision.
         </p>
         <a href="/dashboard" class="btn btn-primary btn-lg px-5">
           <i class="bi bi-grid me-2"></i>Go to Dashboard
@@ -42,11 +42,11 @@
         <!-- Group Header -->
         <div class="d-flex align-items-center gap-3 mb-3">
           <div class="set-icon-wrap-sm">
-            <i class="bi bi-journal-bookmark-fill"></i>
+            <i class="bi bi-journal-text"></i>
           </div>
           <div>
-            <h5 class="fw-bold mb-0"><%= group.name %></h5>
-            <span class="text-muted small"><%= group.questions.length %> flagged question<%= group.questions.length !== 1 ? 's' : '' %></span>
+            <h5 class="fw-bold mb-0 text-white"><%= group.name %></h5>
+            <span class="text-white-50 small"><%= group.questions.length %> flagged question<%= group.questions.length !== 1 ? 's' : '' %></span>
           </div>
           <a href="/sets/<%= group.id %>/quiz" class="btn btn-sm btn-primary ms-auto">
             <i class="bi bi-play-fill me-1"></i>Start Quiz

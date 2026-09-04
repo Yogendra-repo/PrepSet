@@ -5,69 +5,135 @@
   <div class="container py-5">
     <%- include('partials/flash') %>
 
-    <!-- Page Header -->
-    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-5">
+    <!-- Executive Stats Strip -->
+    <% if (typeof stats !== 'undefined') { %>
+      <div class="row g-3 stats-strip">
+        <div class="col-6 col-lg-3">
+          <div class="stat-metric-card">
+            <div class="stat-icon-wrapper stat-icon-indigo">
+              <i class="bi bi-collection-fill"></i>
+            </div>
+            <div>
+              <div class="stat-metric-val"><%= stats.total_sets %></div>
+              <div class="stat-metric-lbl">Question Sets</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-metric-card">
+            <div class="stat-icon-wrapper stat-icon-cyan">
+              <i class="bi bi-question-circle-fill"></i>
+            </div>
+            <div>
+              <div class="stat-metric-val"><%= stats.total_questions %></div>
+              <div class="stat-metric-lbl">Total Questions</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-metric-card">
+            <div class="stat-icon-wrapper stat-icon-emerald">
+              <i class="bi bi-trophy-fill"></i>
+            </div>
+            <div>
+              <div class="stat-metric-val"><%= stats.total_quizzes %></div>
+              <div class="stat-metric-lbl">Quizzes Taken</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-metric-card">
+            <div class="stat-icon-wrapper stat-icon-amber">
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <div>
+              <div class="stat-metric-val"><%= stats.total_flagged %></div>
+              <div class="stat-metric-lbl">Flagged Questions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Page Header & Action Bar -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
       <div>
-        <h1 class="fw-bold mb-1">Your Question Sets</h1>
-        <p class="text-muted mb-0">
+        <h1 class="page-title mb-1">Study Dashboard</h1>
+        <p class="page-subtitle mb-0">
           <% if (questionSets.length > 0) { %>
-            <%= questionSets.length %> set<%= questionSets.length !== 1 ? 's' : '' %> available
+            <%= questionSets.length %> question set<%= questionSets.length !== 1 ? 's' : '' %> ready for practice
           <% } else { %>
-            Get started by creating your first question set
+            Welcome to PrepSet! Create your first question set to begin.
           <% } %>
         </p>
       </div>
-      <a href="/sets/new" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2">
-        <i class="bi bi-plus-lg"></i> Create New Set
-      </a>
+
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <% if (questionSets.length > 0) { %>
+          <!-- Real-time Filter -->
+          <div class="search-filter-wrapper">
+            <i class="bi bi-search text-muted"></i>
+            <input
+              type="text"
+              id="setSearchInput"
+              placeholder="Search question sets..."
+              autocomplete="off"
+            />
+          </div>
+        <% } %>
+
+        <a href="/sets/new" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i> Create New Set
+        </a>
+      </div>
     </div>
 
     <% if (questionSets.length === 0) { %>
       <!-- Empty State -->
-      <div class="empty-state text-center py-5">
-        <div class="empty-state-icon mb-4">
-          <i class="bi bi-journal-plus"></i>
+      <div class="empty-state-box my-4">
+        <div class="empty-state-icon">
+          <i class="bi bi-stack"></i>
         </div>
-        <h3 class="fw-semibold mb-2">No Question Sets Yet</h3>
-        <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">
-          Create your first question set and upload a CSV file to start quizzing yourself.
+        <h3 class="fw-bold mb-2">No Question Sets Yet</h3>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 440px;">
+          Build your personal question library. Create a set and upload questions from a CSV file to practice.
         </p>
         <a href="/sets/new" class="btn btn-primary btn-lg px-5">
           <i class="bi bi-plus-lg me-2"></i>Create Your First Set
         </a>
       </div>
     <% } else { %>
-      <!-- Question Set Cards -->
-      <div class="row g-4">
+      <!-- Question Set Cards Grid -->
+      <div class="row g-4" id="setsContainer">
         <% questionSets.forEach(set => { %>
-          <div class="col-12 col-md-6 col-xl-4">
-            <div class="card question-set-card h-100 shadow-sm border-0">
+          <div class="col-12 col-md-6 col-xl-4 set-item" data-name="<%= set.name.toLowerCase() %>" data-desc="<%= (set.description || '').toLowerCase() %>">
+            <div class="card question-set-card h-100 border-0">
               <div class="card-body d-flex flex-column p-4">
-                <!-- Card Header -->
+                <!-- Card Top Badges -->
                 <div class="d-flex align-items-start justify-content-between mb-3">
                   <div class="set-icon-wrap me-3">
-                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <i class="bi bi-journal-text"></i>
                   </div>
-                  <span class="badge bg-primary-soft text-primary fw-semibold ms-auto">
-                    <%= set.question_count %> Q<%= set.question_count != 1 ? 's' : '' %>
+                  <span class="badge-count ms-auto">
+                    <i class="bi bi-question-circle me-1"></i><%= set.question_count %> Question<%= set.question_count != 1 ? 's' : '' %>
                   </span>
                 </div>
 
                 <!-- Card Content -->
-                <h5 class="card-title fw-bold mb-2"><%= set.name %></h5>
+                <h5 class="fw-bold mb-2 text-dark"><%= set.name %></h5>
                 <p class="card-text text-muted small flex-grow-1">
                   <% if (set.description) { %>
-                    <%= set.description.length > 100 ? set.description.substring(0, 100) + '…' : set.description %>
+                    <%= set.description.length > 110 ? set.description.substring(0, 110) + '…' : set.description %>
                   <% } else { %>
                     <em>No description provided.</em>
                   <% } %>
                 </p>
 
-                <!-- Created date -->
-                <p class="text-muted small mb-3 mt-2">
-                  <i class="bi bi-calendar3 me-1"></i>
-                  Created <%= new Date(set.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-                </p>
+                <!-- Date Meta -->
+                <div class="d-flex align-items-center text-muted small mb-3 mt-2">
+                  <i class="bi bi-calendar3 me-1.5"></i>
+                  <span>Created <%= new Date(set.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+                </div>
 
                 <!-- Actions -->
                 <div class="d-flex gap-2 mt-auto">
@@ -76,12 +142,12 @@
                       <i class="bi bi-play-fill me-1"></i>Start Quiz
                     </a>
                   <% } else { %>
-                    <a href="/sets/<%= set.id %>/upload" class="btn btn-warning flex-grow-1">
+                    <a href="/sets/<%= set.id %>/upload" class="btn btn-warning flex-grow-1 text-dark fw-semibold">
                       <i class="bi bi-upload me-1"></i>Upload CSV
                     </a>
                   <% } %>
-                  <a href="/sets/<%= set.id %>" class="btn btn-outline-secondary">
-                    <i class="bi bi-gear-fill"></i>
+                  <a href="/sets/<%= set.id %>" class="btn btn-outline-secondary" title="View & Manage Questions">
+                    <i class="bi bi-sliders"></i>
                   </a>
                 </div>
               </div>
@@ -89,20 +155,27 @@
           </div>
         <% }) %>
 
-        <!-- Create New Set card -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <!-- Create New Set Card -->
+        <div class="col-12 col-md-6 col-xl-4 set-item-new">
           <a href="/sets/new" class="text-decoration-none">
-            <div class="card create-set-card h-100 border-dashed d-flex align-items-center justify-content-center" style="min-height: 220px;">
-              <div class="card-body text-center p-4">
-                <div class="create-set-icon mb-3">
+            <div class="card create-set-card h-100 d-flex align-items-center justify-content-center p-4" style="min-height: 220px;">
+              <div class="text-center">
+                <div class="create-set-icon mb-2">
                   <i class="bi bi-plus-circle-fill"></i>
                 </div>
-                <h6 class="fw-semibold text-muted">Create New Set</h6>
-                <p class="text-muted small mb-0">Add a new question bank</p>
+                <h6 class="fw-bold text-white mb-1">Create Question Set</h6>
+                <p class="text-muted small mb-0">Add a new bank for study &amp; exams</p>
               </div>
             </div>
           </a>
         </div>
+      </div>
+
+      <!-- No search results state -->
+      <div id="noSearchMatch" class="empty-state-box text-center py-5 d-none my-4">
+        <i class="bi bi-search fs-1 text-muted mb-2 d-block"></i>
+        <h5 class="fw-bold">No matching sets found</h5>
+        <p class="text-muted small">Try searching with different keywords.</p>
       </div>
     <% } %>
   </div>

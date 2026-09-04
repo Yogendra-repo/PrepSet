@@ -1,25 +1,25 @@
-<%- include('partials/header', { title: 'Quiz Result' }) %>
+<%- include('partials/header', { title: 'Results — ' + questionSet.name }) %>
 <%- include('partials/navbar', { activePage: '' }) %>
 
 <main class="main-content">
   <div class="container py-5">
     <div class="row justify-content-center">
-      <div class="col-12 col-lg-7">
+      <div class="col-12 col-lg-8">
 
         <!-- Result Card -->
-        <div class="card border-0 shadow result-card text-center mb-4">
-          <div class="card-body p-5">
+        <div class="card result-card border-0 shadow-lg text-center mb-4">
+          <div class="card-body p-4 p-md-5">
             <div class="result-icon mb-3">
               <% if (percentage >= 75) { %>
-                <i class="bi bi-trophy-fill text-warning"></i>
+                <span class="d-inline-block text-warning" style="animation: bounce 0.8s ease;"><i class="bi bi-trophy-fill"></i></span>
               <% } else if (percentage >= 50) { %>
-                <i class="bi bi-emoji-smile-fill text-primary"></i>
+                <span class="d-inline-block text-primary"><i class="bi bi-award-fill"></i></span>
               <% } else { %>
-                <i class="bi bi-emoji-frown-fill text-danger"></i>
+                <span class="d-inline-block text-secondary"><i class="bi bi-book-half"></i></span>
               <% } %>
             </div>
 
-            <h2 class="fw-bold mb-1">Quiz Completed!</h2>
+            <h2 class="fw-bold mb-1 text-dark">Quiz Completed!</h2>
             <p class="text-muted mb-4"><%= questionSet.name %></p>
 
             <!-- Score -->
@@ -30,18 +30,18 @@
             </div>
 
             <!-- Accuracy Progress -->
-            <div class="mb-4">
-              <div class="d-flex justify-content-between mb-1">
-                <span class="fw-semibold">Accuracy</span>
+            <div class="mb-4 px-md-4">
+              <div class="d-flex justify-content-between mb-1.5 small">
+                <span class="fw-bold text-dark">Accuracy</span>
                 <span class="fw-bold <%= percentage >= 75 ? 'text-success' : percentage >= 50 ? 'text-warning' : 'text-danger' %>">
                   <%= percentage %>%
                 </span>
               </div>
-              <div class="progress" style="height: 12px; border-radius: 6px;">
+              <div class="progress" style="height: 12px; border-radius: 6px; background: #e2e8f0;">
                 <div
                   class="progress-bar <%= percentage >= 75 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-danger' %>"
                   role="progressbar"
-                  style="width: <%= percentage %>%; border-radius: 6px;"
+                  style="width: <%= percentage %>%; border-radius: 6px; transition: width 0.8s ease;"
                 ></div>
               </div>
             </div>
@@ -62,20 +62,25 @@
               </div>
               <div class="col-4">
                 <div class="stat-box">
-                  <div class="stat-value text-muted"><%= totalQuestions - correct - incorrect %></div>
+                  <div class="stat-value text-muted"><%= skipped %></div>
                   <div class="stat-label">Skipped</div>
                 </div>
               </div>
             </div>
 
+            <div class="text-muted small mb-4">
+              <i class="bi bi-stopwatch me-1 text-primary"></i>
+              Time taken: <strong class="text-dark"><%= Math.floor(durationSeconds / 60).toString().padStart(2, '0') %>:<%= (durationSeconds % 60).toString().padStart(2, '0') %></strong>
+            </div>
+
             <!-- Message -->
-            <div class="alert <%= percentage >= 75 ? 'alert-success' : percentage >= 50 ? 'alert-warning' : 'alert-danger' %> border-0 mb-4">
+            <div class="alert <%= percentage >= 75 ? 'alert-success' : percentage >= 50 ? 'alert-warning' : 'alert-info' %> border-0 mb-4 py-3">
               <% if (percentage >= 75) { %>
-                <i class="bi bi-star-fill me-2"></i><strong>Excellent work!</strong> Keep it up!
+                <i class="bi bi-star-fill me-2"></i><strong>Outstanding achievement!</strong> You've mastered this set.
               <% } else if (percentage >= 50) { %>
-                <i class="bi bi-lightning-fill me-2"></i><strong>Good effort!</strong> Review the incorrect ones.
+                <i class="bi bi-lightning-fill me-2"></i><strong>Good effort!</strong> Review the missed questions below to score even higher.
               <% } else { %>
-                <i class="bi bi-book-fill me-2"></i><strong>Keep practising!</strong> Review the material and try again.
+                <i class="bi bi-book-fill me-2"></i><strong>Keep practicing!</strong> Review the correct answers below and try another attempt.
               <% } %>
             </div>
 
@@ -85,26 +90,35 @@
                 <i class="bi bi-arrow-repeat me-2"></i>Retry Quiz
               </a>
               <a href="/sets/<%= questionSet.id %>" class="btn btn-outline-secondary btn-lg px-4">
-                <i class="bi bi-grid me-2"></i>View Questions
+                <i class="bi bi-list-ol me-2"></i>Question Bank
               </a>
               <a href="/dashboard" class="btn btn-outline-secondary btn-lg px-4">
-                <i class="bi bi-house me-2"></i>Dashboard
+                <i class="bi bi-grid me-2"></i>Dashboard
               </a>
             </div>
           </div>
         </div>
 
-        <!-- Per-Question Breakdown -->
+        <!-- Per-Question Breakdown with Filter -->
         <div class="card border-0 shadow-sm">
-          <div class="card-header bg-transparent border-bottom py-3">
-            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+          <div class="card-header bg-transparent border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
               <i class="bi bi-list-check text-primary"></i>Answer Breakdown
             </h6>
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-primary active" id="btnFilterBreakdownAll" onclick="filterBreakdown('all')">All (<%= results.length %>)</button>
+              <button type="button" class="btn btn-outline-secondary" id="btnFilterBreakdownIncorrect" onclick="filterBreakdown('incorrect')">Incorrect (<%= incorrect %>)</button>
+              <button type="button" class="btn btn-outline-secondary" id="btnFilterBreakdownSkipped" onclick="filterBreakdown('skipped')">Skipped (<%= skipped %>)</button>
+              <button type="button" class="btn btn-outline-secondary" id="btnFilterBreakdownCorrect" onclick="filterBreakdown('correct')">Correct (<%= correct %>)</button>
+            </div>
           </div>
-          <div class="card-body p-0">
+          <div class="card-body p-0" id="breakdownContainer">
             <% results.forEach((r, idx) => { %>
-              <div class="result-row d-flex align-items-start gap-3 p-4 <%= idx < results.length - 1 ? 'border-bottom' : '' %>">
-                <div class="result-status-icon flex-shrink-0">
+              <div
+                class="result-row breakdown-item d-flex align-items-start gap-3 p-4 <%= idx < results.length - 1 ? 'border-bottom' : '' %>"
+                data-status="<%= r.userAnswer === null ? 'skipped' : (r.isCorrect ? 'correct' : 'incorrect') %>"
+              >
+                <div class="result-status-icon flex-shrink-0 mt-1">
                   <% if (r.userAnswer === null) { %>
                     <i class="bi bi-dash-circle-fill text-muted fs-5"></i>
                   <% } else if (r.isCorrect) { %>
@@ -114,7 +128,7 @@
                   <% } %>
                 </div>
                 <div class="flex-grow-1 min-w-0">
-                  <p class="fw-semibold mb-1 small"><span class="text-muted me-2">Q<%= idx + 1 %>.</span><%= r.question_text %></p>
+                  <p class="fw-semibold mb-1 text-dark"><span class="text-muted me-2">Q<%= idx + 1 %>.</span><%= r.question_text %></p>
                   <div class="d-flex flex-wrap gap-2 small">
                     <span class="text-muted">
                       Your answer:
@@ -122,7 +136,7 @@
                         <%= r.userAnswer || 'Not answered' %>
                       </strong>
                     </span>
-                    <% if (!r.isCorrect) { %>
+                    <% if (!r.isCorrect && r.userAnswer !== null) { %>
                       <span class="text-muted">|</span>
                       <span class="text-muted">Correct: <strong class="text-success"><%= r.correct_answer %></strong></span>
                     <% } %>
@@ -137,5 +151,29 @@
     </div>
   </div>
 </main>
+
+<script>
+  function filterBreakdown(type) {
+    document.querySelectorAll('.breakdown-item').forEach(item => {
+      const status = item.getAttribute('data-status');
+      if (type === 'all') {
+        item.classList.remove('d-none');
+      } else if (type === 'incorrect') {
+        item.classList.toggle('d-none', status !== 'incorrect');
+      } else if (type === 'correct') {
+        item.classList.toggle('d-none', status !== 'correct');
+      } else if (type === 'skipped') {
+        item.classList.toggle('d-none', status !== 'skipped');
+      }
+    });
+
+    ['All', 'Incorrect', 'Skipped', 'Correct'].forEach(btn => {
+      const el = document.getElementById(`btnFilterBreakdown${btn}`);
+      if (el) {
+        el.className = btn.toLowerCase() === type ? 'btn btn-primary active' : 'btn btn-outline-secondary';
+      }
+    });
+  }
+</script>
 
 <%- include('partials/footer') %>

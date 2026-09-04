@@ -36,7 +36,7 @@ const storage = diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024, fieldSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowed = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
     if (allowed.includes(file.mimetype) || file.originalname.endsWith('.csv')) {
@@ -52,7 +52,23 @@ router.get('/new', showCreateForm);
 router.post('/', createSet);
 router.get('/:id', showSet);
 router.get('/:id/upload', showUploadForm);
-router.post('/:id/upload', upload.single('csvFile'), uploadCSV);
+router.post(
+  '/:id/upload',
+  (req, res, next) => {
+    upload.single('csvFile')(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+          req.flash('error', 'File is too large. Maximum allowed file size is 5MB.');
+        } else {
+          req.flash('error', err.message || 'File upload failed. Only valid CSV files are allowed.');
+        }
+        return res.redirect(`/sets/${req.params.id}/upload`);
+      }
+      next();
+    });
+  },
+  uploadCSV
+);
 router.post('/:id/delete', deleteSet);
 
 export default router;

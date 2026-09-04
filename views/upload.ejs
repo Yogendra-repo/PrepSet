@@ -4,71 +4,110 @@
 <main class="main-content">
   <div class="container py-5">
     <div class="row justify-content-center">
-      <div class="col-12 col-md-10 col-lg-7">
+      <div class="col-12 col-md-10 col-lg-8">
 
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4">
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="/sets/<%= questionSet.id %>"><%= questionSet.name %></a></li>
-            <li class="breadcrumb-item active">Upload CSV</li>
+            <li class="breadcrumb-item active">Upload Questions</li>
           </ol>
         </nav>
 
         <%- include('partials/flash') %>
 
-        <!-- Question Set Badge -->
-        <div class="d-flex align-items-center gap-2 mb-4">
-          <span class="badge bg-primary-soft text-primary px-3 py-2 fs-6">
-            <i class="bi bi-journal-bookmark-fill me-1"></i><%= questionSet.name %>
-          </span>
-        </div>
-
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-lg border-0 mb-4">
           <div class="card-body p-4 p-md-5">
             <div class="text-center mb-4">
               <div class="form-page-icon mb-3">
-                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
               </div>
-              <h2 class="fw-bold mb-1">Upload Questions</h2>
-              <p class="text-muted">Upload a CSV file containing your MCQ questions.</p>
+              <h2 class="fw-bold mb-1 text-dark">Import Questions</h2>
+              <p class="text-muted">Target Set: <strong class="text-primary"><%= questionSet.name %></strong></p>
             </div>
 
+            <!-- Upload Tabs -->
+            <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-3" id="uploadTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-semibold" id="file-tab" data-bs-toggle="pill" data-bs-target="#filePane" type="button" role="tab">
+                  <i class="bi bi-file-earmark-arrow-up me-1.5"></i>Upload CSV File
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="text-tab" data-bs-toggle="pill" data-bs-target="#textPane" type="button" role="tab">
+                  <i class="bi bi-textarea-t me-1.5"></i>Paste CSV Text
+                </button>
+              </li>
+            </ul>
+
             <form action="/sets/<%= questionSet.id %>/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
-              <div class="mb-4">
-                <label for="csvFile" class="form-label fw-semibold">Choose CSV File <span class="text-danger">*</span></label>
-                <input
-                  type="file"
-                  class="form-control form-control-lg"
-                  id="csvFile"
-                  name="csvFile"
-                  accept=".csv"
-                  required
-                />
-                <div class="form-text">Maximum file size: 5MB. Only .csv files accepted.</div>
+              <div class="tab-content" id="uploadTabContent">
+
+                <!-- File Tab Pane -->
+                <div class="tab-pane fade show active" id="filePane" role="tabpanel">
+                  <div class="mb-4">
+                    <div class="dropzone-wrap" id="dropZone" onclick="document.getElementById('csvFile').click()">
+                      <div class="dropzone-icon">
+                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                      </div>
+                      <h6 class="fw-bold text-dark mb-1">Click to browse or drag &amp; drop your CSV file</h6>
+                      <p class="text-muted small mb-2">Accepts standard .csv format (up to 5MB)</p>
+                      <span class="badge bg-primary px-3 py-1.5 rounded-pill" id="fileSelectedBadge" style="display: none;">
+                        <i class="bi bi-check2 me-1"></i><span id="selectedFileName"></span>
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      class="d-none"
+                      id="csvFile"
+                      name="csvFile"
+                      accept=".csv,text/csv,application/vnd.ms-excel"
+                    />
+                  </div>
+                </div>
+
+                <!-- Text Tab Pane -->
+                <div class="tab-pane fade" id="textPane" role="tabpanel">
+                  <div class="mb-4">
+                    <label for="csvText" class="form-label fw-semibold text-dark">Paste Raw CSV Data</label>
+                    <textarea
+                      class="form-control font-monospace"
+                      id="csvText"
+                      name="csvText"
+                      rows="8"
+                      maxlength="5242880"
+                      placeholder="question,optionA,optionB,optionC,optionD,correctAnswer&#10;&quot;What is SQL?&quot;,&quot;A query language&quot;,&quot;A database&quot;,&quot;An OS&quot;,&quot;A protocol&quot;,&quot;A&quot;"
+                    ></textarea>
+                    <div class="form-text">Paste CSV text with column headers intact.</div>
+                  </div>
+                </div>
+
               </div>
 
-              <div class="d-grid">
+              <div class="d-grid mt-4">
                 <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
-                  <i class="bi bi-cloud-upload-fill me-2"></i>Upload Questions
+                  <i class="bi bi-cloud-upload-fill me-2"></i>Upload &amp; Save Questions
                 </button>
               </div>
             </form>
           </div>
         </div>
 
-        <!-- CSV Format Guide -->
+        <!-- CSV Format Guide & Sample Download -->
         <div class="card border-0 shadow-sm">
-          <div class="card-header bg-transparent border-bottom py-3">
-            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
-              <i class="bi bi-info-circle-fill text-primary"></i>
-              Required CSV Format
+          <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+              <i class="bi bi-info-circle-fill text-primary"></i>Required CSV Columns
             </h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadSampleCSV()">
+              <i class="bi bi-download me-1"></i>Download Sample CSV
+            </button>
           </div>
           <div class="card-body p-4">
             <!-- Headers -->
-            <p class="fw-semibold mb-2">Required column headers:</p>
-            <div class="d-flex flex-wrap gap-2 mb-4">
+            <p class="fw-semibold mb-2 text-dark small text-uppercase">Expected header row:</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
               <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 font-monospace">question</span>
               <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 font-monospace">optionA</span>
               <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 font-monospace">optionB</span>
@@ -77,25 +116,10 @@
               <span class="badge bg-success-subtle text-success border px-3 py-2 font-monospace">correctAnswer</span>
             </div>
 
-            <!-- correctAnswer note -->
-            <div class="alert alert-warning d-flex gap-2 py-2 mb-4 border-0 bg-warning-subtle">
-              <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-              <div class="small"><strong>correctAnswer</strong> must be one of: <code>A</code>, <code>B</code>, <code>C</code>, or <code>D</code> (case-insensitive).</div>
-            </div>
-
-            <!-- Example -->
-            <p class="fw-semibold mb-2">Example CSV:</p>
-            <pre class="csv-example p-3 rounded small"><code>question,optionA,optionB,optionC,optionD,correctAnswer
-"What is SQL?","A query language","A database","An OS","A protocol","A"
-"What is a primary key?","Unique identifier","Duplicate value","Foreign key","Index","A"
-"What does DBMS stand for?","Data Base Management System","Digital Base Memory Store","Data Byte Management System","None","A"</code></pre>
-
-            <div class="mt-3">
-              <p class="text-muted small mb-0">
-                <i class="bi bi-lightbulb me-1"></i>
-                <strong>Tip:</strong> Wrap values containing commas in double quotes. Completely empty rows are automatically ignored.
-              </p>
-            </div>
+            <!-- Example CSV Code block -->
+            <pre class="csv-example p-3 mb-0 small"><code>question,optionA,optionB,optionC,optionD,correctAnswer
+"What is a primary key?","Unique identifier in a table","A foreign index","Duplicate record","None of these","A"
+"Which language is used for styling web pages?","HTML","JQuery","CSS","XML","C"</code></pre>
           </div>
         </div>
 
@@ -105,11 +129,92 @@
 </main>
 
 <script>
-  // Show loading state on upload
-  document.getElementById('uploadForm').addEventListener('submit', function() {
+  // Drag & drop file interaction
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('csvFile');
+  const textInput = document.getElementById('csvText');
+  const badge = document.getElementById('fileSelectedBadge');
+  const fileNameSpan = document.getElementById('selectedFileName');
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+    });
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileSelected();
+    }
+  });
+
+  fileInput.addEventListener('change', handleFileSelected);
+
+  function handleFileSelected() {
+    if (fileInput.files.length) {
+      fileNameSpan.textContent = fileInput.files[0].name;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Clear opposing input on tab switch
+  document.getElementById('file-tab').addEventListener('shown.bs.tab', () => {
+    textInput.value = '';
+  });
+  document.getElementById('text-tab').addEventListener('shown.bs.tab', () => {
+    fileInput.value = '';
+    badge.style.display = 'none';
+  });
+
+  // Sample CSV generator & download
+  function downloadSampleCSV() {
+    const csvContent = 'question,optionA,optionB,optionC,optionD,correctAnswer\r\n' +
+      '"What does HTML stand for?","Hyper Text Markup Language","Hyperlink Text Mark Language","Home Tool Markup Language","Hyperlinks and Text Markup Language","A"\r\n' +
+      '"Which protocol is used for secure web browsing?","HTTP","FTP","HTTPS","SMTP","C"\r\n' +
+      '"Which data structure follows LIFO?","Queue","Stack","Array","Linked List","B"\r\n';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'prepset_sample_questions.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Submit validation and loading state
+  document.getElementById('uploadForm').addEventListener('submit', function(event) {
     const btn = document.getElementById('uploadBtn');
+    const hasFile = fileInput.files.length > 0;
+    const hasText = textInput.value.trim().length > 0;
+
+    if (!hasFile && !hasText) {
+      event.preventDefault();
+      alert('Please choose a CSV file or paste CSV text before uploading.');
+      return;
+    }
+    if (hasFile && hasText) {
+      event.preventDefault();
+      alert('Please use either a CSV file or pasted text, not both.');
+      return;
+    }
+
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading & Validating…';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating &amp; Importing...';
   });
 </script>
 
