@@ -32,7 +32,7 @@ export async function showQuiz(req, res) {
 // POST /sets/:id/quiz/submit
 export async function submitQuiz(req, res) {
   const { id } = req.params;
-  const { answers } = req.body; // answers is an object: { questionId: selectedAnswer }
+  const { answers } = req.body || {}; // answers is an object: { questionId: selectedAnswer }
 
   try {
     const setResult = await db.query('SELECT * FROM question_sets WHERE id = $1', [id]);
@@ -50,8 +50,13 @@ export async function submitQuiz(req, res) {
 
     let score = 0;
     const results = questions.map((q) => {
-      const userAnswer = answers?.[q.id]?.toUpperCase() || null;
-      const isCorrect = userAnswer === q.correct_answer;
+      const submittedAnswer = answers && typeof answers === 'object'
+        ? answers[`q_${q.id}`]
+        : null;
+      const userAnswer = typeof submittedAnswer === 'string'
+        ? submittedAnswer.trim().toUpperCase()
+        : null;
+      const isCorrect = userAnswer !== null && userAnswer === q.correct_answer.trim().toUpperCase();
       if (isCorrect) score++;
       return {
         ...q,

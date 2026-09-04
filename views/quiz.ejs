@@ -54,7 +54,7 @@
                     <label class="quiz-option-label" id="opt-<%= idx %>-<%= opt.key %>">
                       <input
                         type="radio"
-                        name="answers[<%= q.id %>]"
+                        name="answers[q_<%= q.id %>]"
                         value="<%= opt.key %>"
                         class="quiz-radio"
                         data-slide="<%= idx %>"
@@ -158,7 +158,8 @@
   }
 
   function confirmSubmit() {
-    const unanswered = answered.filter(v => !v).length;
+    const unanswered = document.querySelectorAll('.quiz-question-slide').length -
+      document.querySelectorAll('.quiz-radio:checked').length;
     if (unanswered > 0) {
       const warn = document.getElementById('unansweredWarning');
       document.getElementById('unansweredCount').textContent = unanswered;
